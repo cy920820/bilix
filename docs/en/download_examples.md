@@ -3,9 +3,11 @@
 Command line is too cumbersome and not powerful enough for you? bilix can be used as a Python library
 with user-friendly interfaces and enhanced functionality for greater flexibility.
 
+## Start with the simplest
+
 ```python
 import asyncio
-from bilix import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -23,9 +25,10 @@ if __name__ == '__main__':
 
 You can combine the coroutine objects returned by the downloader and use gather to execute them concurrently.
 The concurrency is strictly restricted by the downloader object, ensuring no unexpected burden on the server.
+
 ```python
 import asyncio
-from bilix import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -33,7 +36,7 @@ async def main():
     cor1 = d.get_series(
         'https://www.bilibili.com/bangumi/play/ss28277'
         , quality=999)
-    cor2 = d.get_up_videos(url_or_mid='436482484', quality=999)
+    cor2 = d.get_up(url_or_mid='436482484', quality=999)
     cor3 = d.get_video('https://www.bilibili.com/bangumi/play/ep477122', quality=999)
     await asyncio.gather(cor1, cor2, cor3)
     await d.aclose()
@@ -51,7 +54,7 @@ You can download just a clip of the video
 
 ```python
 import asyncio
-from bilix.download import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -69,10 +72,13 @@ if __name__ == '__main__':
 ## Download from multiple sites simultaneously
 
 You can initialize downloaders for different websites, and use the coroutine objects returned by their
-methods for concurrent downloads. The concurrency control between different downloaders is independent, allowing you to maximize the use of your network resources.
+methods for concurrent downloads. The concurrency control between different downloaders is independent, allowing you to
+maximize the use of your network resources.
+
 ```python
 import asyncio
-from bilix import DownloaderBilibili, DownloaderCctv
+from bilix.sites.bilibili import DownloaderBilibili
+from bilix.sites.cctv import DownloaderCctv
 
 
 async def main():
@@ -95,7 +101,8 @@ The following example limits the total download speed below 1MB/s
 
 ```python
 import asyncio
-from bilix import DownloaderBilibili, DownloaderCctv
+from bilix.sites.bilibili import DownloaderBilibili
+from bilix.sites.cctv import DownloaderCctv
 
 
 async def main():
@@ -119,3 +126,21 @@ async def main():
             cctv_d.get_series('https://www.douyin.com/video/7132430286415252773')
         )
 ```
+
+## Show progress bar
+
+When using the python module, the progress bar is not displayed by default. If you want to display it, you can
+
+```python
+from bilix.progress.cli_progress import CLIProgress
+
+CLIProgress.start()
+```
+
+or open via the `progress` object inside any downloader
+
+```python
+d.progress.start()
+```
+
+

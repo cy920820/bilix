@@ -11,6 +11,11 @@ export default defineConfig({
     editLink: {
       pattern: 'https://github.com/HFrost0/bilix/edit/master/docs/:path'
     },
+    algolia: {
+      appId: 'F4ZDY9KUXU',
+      apiKey: '30aaace8ddea0d6f25ac39ea70ce8bd8',
+      indexName: 'bilix'
+    },
     footer: {
       message: 'Released under the Apache 2.0 License.',
       copyright: 'Copyright © 2022-present HFrost0'
@@ -27,6 +32,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           {text: 'Home', link: '/'},
+          {text: '安装', link: '/install'},
           {text: '快速上手', link: '/quickstart'}
         ],
         sidebar: [
@@ -52,6 +58,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           {text: 'Home', link: '/en/'},
+          {text: 'Install', link: '/en/install'},
           {text: 'Quickstart', link: '/en/quickstart'}
         ],
         sidebar: [

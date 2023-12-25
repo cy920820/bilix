@@ -1,15 +1,13 @@
-import asyncio
+"""
+some useful functions
+"""
 import html
-import os
+import json
 import re
-import random
+import time
+from functools import wraps
 from urllib.parse import quote_plus
 from typing import Union, Sequence, Coroutine, List, Tuple, Optional
-import aiofiles
-import browser_cookie3
-import httpx
-import time
-
 from bilix.log import logger
 
 
@@ -19,43 +17,6 @@ def cors_slice(cors: Sequence[Coroutine], p_range: Sequence[int]):
     [cor.close() for idx, cor in enumerate(cors) if idx < h or idx >= t]  # avoid runtime warning
     cors = cors[h:t]
     return cors
-
-
-async def req_retry(client: httpx.AsyncClient, url_or_urls: Union[str, Sequence[str]], method='GET',
-                    follow_redirects=False, retry=5, **kwargs) -> httpx.Response:
-    """Client request with multiple backup urls and retry"""
-    pre_exc = None  # predefine to avoid warning
-    for times in range(1 + retry):
-        url = url_or_urls if type(url_or_urls) is str else random.choice(url_or_urls)
-        try:
-            res = await client.request(method, url, follow_redirects=follow_redirects, **kwargs)
-            res.raise_for_status()
-        except httpx.TransportError as e:
-            msg = f'{method} {e.__class__.__name__} url: {url}'
-            logger.warning(msg) if times > 0 else logger.debug(msg)
-            pre_exc = e
-            await asyncio.sleep(.1 * (times + 1))
-        except httpx.HTTPStatusError as e:
-            logger.warning(f'{method} {e.response.status_code} {url}')
-            pre_exc = e
-            await asyncio.sleep(1. * (times + 1))
-        except Exception as e:
-            logger.warning(f'{method} {e.__class__.__name__} 未知异常 url: {url}')
-            raise e
-        else:
-            return res
-    logger.error(f"{method} 超过重复次数 {url_or_urls}")
-    raise pre_exc
-
-
-async def merge_files(file_list: Sequence[str], new_path: str):
-    first_file = file_list[0]
-    async with aiofiles.open(first_file, 'ab') as f:
-        for idx in range(1, len(file_list)):
-            async with aiofiles.open(file_list[idx], 'rb') as fa:
-                await f.write(await fa.read())
-            os.remove(file_list[idx])
-    os.rename(first_file, new_path)
 
 
 def legal_title(*parts: str, join_str: str = '-'):
@@ -74,22 +35,8 @@ def replace_illegal(s: str):
     """strip, unescape html and replace os illegal character in s"""
     s = s.strip()
     s = html.unescape(s)  # handel & "...
-    s = re.sub(r"[/\\:*?\"<>|\n]", '', s)  # replace illegal filename character
+    s = re.sub(r"[/\\:*?\"<>|\n\t]", '', s)  # replace illegal filename character
     return s
-
-
-def parse_bilibili_url(url: str):
-    if re.match(r'https://space\.bilibili\.com/\d+/favlist\?fid=\d+', url):
-        return 'fav'
-    elif re.match(r'https://space\.bilibili\.com/\d+/channel/seriesdetail\?sid=\d+', url):
-        return 'list'
-    elif re.match(r'https://space\.bilibili\.com/\d+/channel/collectiondetail\?sid=\d+', url):
-        return 'col'
-    elif re.match(r'https://space\.bilibili\.com/\d+', url):  # up space url
-        return 'up'
-    elif re.search(r'www\.bilibili\.com', url):
-        return 'video'
-    raise ValueError(f'{url} no match for bilibili')
 
 
 def convert_size(total_bytes: int) -> str:
@@ -132,17 +79,6 @@ def valid_sess_data(sess_data: Optional[str]) -> str:
     return sess_data
 
 
-def update_cookies_from_browser(client: httpx.AsyncClient, browser: str, domain: str = ""):
-    try:
-        f = getattr(browser_cookie3, browser.lower())
-        a = time.time()
-        logger.debug(f"trying to load cookies from {browser}: {domain}, may need auth")
-        client.cookies.update(f(domain_name=domain))
-        logger.debug(f"load complete, consumed time: {time.time() - a} s")
-    except AttributeError:
-        raise AttributeError(f"Invalid Browser {browser}")
-
-
 def t2s(t: int) -> str:
     return str(t)
 
@@ -156,3 +92,40 @@ def s2t(s: str) -> int:
         return int(s)
     h, m, s = map(int, s.split(':'))
     return h * 60 * 60 + m * 60 + s
+
+
+def json2srt(data: Union[bytes, str, dict]):
+    b = False
+    if type(data) is bytes:
+        data = data.decode('utf-8')
+        b = True
+    if type(data) is str:
+        data = json.loads(data)
+
+    def t2str(t):
+        ms = int(round(t % 1, 3) * 1000)
+        s = int(t)
+        m = s // 60
+        h = m // 60
+        m, s = m % 60, s % 60
+        t_str = f'{h:0>2}:{m:0>2}:{s:0>2},{ms:0>3}'
+        return t_str
+
+    res = ''
+    for idx, i in enumerate(data['body']):
+        from_time, to_time = t2str(i['from']), t2str(i['to'])
+        content = i['content']
+        res += f"{idx + 1}\n{from_time} --> {to_time}\n{content}\n\n"
+    return res.encode('utf-8') if b else res
+
+
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.monotonic_ns()
+        res = func(*args, **kwargs)
+        logger.debug(
+            f"{func.__name__} cost {time.monotonic_ns() - start} ns with args: {args}, kwargs: {kwargs} result: {res}")
+        return res
+
+    return wrapper

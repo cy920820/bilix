@@ -7,7 +7,7 @@
 ```python
 import asyncio
 # 导入下载器，里面有很多方法，例如get_series, get_video, get_favour，get_dm等等
-from bilix import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
 ```python
 import asyncio
-from bilix import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -36,7 +36,7 @@ async def main():
     cor1 = d.get_series(
         'https://www.bilibili.com/bangumi/play/ss28277'
         , quality=999)
-    cor2 = d.get_up_videos(url_or_mid='436482484', quality=999)
+    cor2 = d.get_up(url_or_mid='436482484', quality=999)
     cor3 = d.get_video('https://www.bilibili.com/bangumi/play/ep477122', quality=999)
     await asyncio.gather(cor1, cor2, cor3)
     await d.aclose()
@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
 ```python
 import asyncio
-from bilix.download import DownloaderBilibili
+from bilix.sites.bilibili import DownloaderBilibili
 
 
 async def main():
@@ -75,7 +75,8 @@ if __name__ == '__main__':
 
 ```python
 import asyncio
-from bilix import DownloaderBilibili, DownloaderCctv
+from bilix.sites.bilibili import DownloaderBilibili
+from bilix.sites.cctv import DownloaderCctv
 
 
 async def main():
@@ -97,7 +98,8 @@ if __name__ == '__main__':
 
 ```python
 import asyncio
-from bilix import DownloaderBilibili, DownloaderCctv
+from bilix.sites.bilibili import DownloaderBilibili
+from bilix.sites.cctv import DownloaderCctv
 
 
 async def main():
@@ -120,4 +122,20 @@ async def main():
             bili_d.get_series('https://www.bilibili.com/video/BV1cd4y1Z7EG'),
             cctv_d.get_series('https://www.douyin.com/video/7132430286415252773')
         )
+```
+
+## 显示进度条
+
+使用python模块时，进度条默认不显示，如需显示，可以
+
+```python
+from bilix.progress.cli_progress import CLIProgress
+
+CLIProgress.start()
+```
+
+或者通过任意下载器内部的`progress`对象打开
+
+```python
+d.progress.start()
 ```
